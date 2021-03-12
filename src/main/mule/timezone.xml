@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="b6d63e23-0e7b-43c6-93bd-b4c2f4e5381e" >
+		<http:listener-connection host="${http.host}" port="${http.port}" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="f6fa4f3c-b638-431d-8eef-855762d5a8e7">
+		<http:request-connection host="${httpreq.host}" />
+	</http:request-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="617a36f6-d332-4a02-9db1-6660a3a9f584" file="config-local.yaml" />
+	<validation:config name="Validation_Config" doc:name="Validation Config" doc:id="90a8d3a9-a8ae-4389-9721-118a9f3a5102" />
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="8ab3542c-5dc5-483b-938b-51aeb4c44f82" >
+		<db:mssql-connection host="localhost" port="1433" user="sa" password="harshanani33" databaseName="Flights" />
+	</db:config>
+	<os:object-store name="Object_store" doc:name="Object store" doc:id="6e8fb5b8-7b00-4483-8040-5b45cbcb4e9c" />
+	<flow name="timezoneFlow" doc:id="51b13aef-caf0-4c41-9038-66292938727f" >
+		<http:listener doc:name="Listener" doc:id="1e202e4c-abec-4a45-8e77-7e998ecf3b8f" config-ref="HTTP_Listener_config" path="${http.path}/{region}/{city}"/>
+		<logger level="INFO" doc:name="Logger" doc:id="b7bdd40a-e3cc-4e8f-ab49-2ce152b00b94" message="start::::#[payload]"/>
+		<http:request method="GET" doc:name="Request" doc:id="91c4eacd-c6c6-4f44-888c-33db2374de39" config-ref="HTTP_Request_configuration" path="/${httpreq.basepath}/{region}/{city}">
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	city : attributes.uriParams.city,
+	region : attributes.uriParams.region
+}]]]></http:uri-params>
+		</http:request>
+		<ee:transform doc:name="Transform Message" doc:id="ad95c7cb-038f-41d1-8db6-16a31fd47715" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="4fa171d1-be8f-42fa-8a28-9823a0da404b" message="Timezone::::::#[payload]"/>
+	</flow>
+</mule>
